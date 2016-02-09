@@ -6,7 +6,54 @@ from sqlalchemy.orm import relationship
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from .config import config
+
+
 Base = declarative_base()
+
+
+###################################################################################################
+class ConfigTemperatura(Base):
+    __tablename__ = "config_temperature"
+
+    id = Column(String(10), primary_key=True)
+    temperatura = Column(Float, nullable=False)
+
+    @classmethod
+    #----------------------------------------------------------------------------------------------
+    def get(cls, id):
+        query = session.query(cls)
+        query = query.filter(ConfigTemperatura.id == id)
+
+        return query.first()
+
+
+    @classmethod
+    #----------------------------------------------------------------------------------------------
+    def get_all(cls):
+        query = session.query(cls)
+        query = query.filter(ConfigTemperatura.id.in_(config["config_values"]))
+        values = query.all()
+
+        return {item.id: item.temperatura for item in values}
+
+
+    @classmethod
+    #----------------------------------------------------------------------------------------------
+    def save(cls, values):
+        for id in config["config_values"]:
+            if not values.get(id):
+                raise ValueError("Idiot, pune la amandoua")
+
+        for id, temp in values.iteritems():
+            obj = cls.get(id)
+            if not obj:
+                obj = cls()
+            obj.id = id
+            obj.temperatura = temp
+            session.add(obj)
+        session.commit()
+
 
 
 ###################################################################################################
@@ -86,7 +133,7 @@ class TempCommands(Base):
 
 
 
-engine = create_engine('sqlite:///lib/aquarium.db')
+engine = create_engine('sqlite:///lib/solar.db')
 Base.metadata.create_all(engine)
 Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)

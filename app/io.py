@@ -7,10 +7,6 @@ from lib.config import config
 ###################################################################################################
 class IO_BASE(object):
     PINS = config["pins"]
-    PIN_LIST = config["pin_list"]
-    NI_PINS = config["NI_pins"]
-    RESOURCES = config["resources"]
-
 
     #----------------------------------------------------------------------------------------------
     def __init__(self, GPIO):
@@ -19,22 +15,16 @@ class IO_BASE(object):
         self.GPIO = GPIO
         self.OPEN_PIN = GPIO.LOW
         self.CLOSE_PIN = GPIO.HIGH
-        self.OPEN_NI_PIN = GPIO.HIGH
-        self.CLOSE_NI_PIN = GPIO.LOW
-        #import pdb;pdb.set_trace()
-        #self.change_pin_status("pompa", self.OPEN_PIN)
 
 
     #----------------------------------------------------------------------------------------------
     def open(self, pin_id):
-        state =  self.OPEN_NI_PIN if pin_id in self.NI_PINS else self.OPEN_PIN
-        self.change_pin_status(pin_id, state)
+        self.change_pin_status(pin_id, self.OPEN_PIN)
 
 
     #----------------------------------------------------------------------------------------------
     def close(self, pin_id):
-        state =  self.CLOSE_NI_PIN if pin_id in self.NI_PINS else self.CLOSE_PIN
-        self.change_pin_status(pin_id, state)
+        self.change_pin_status(pin_id, self.CLOSE_PIN)
 
 
     #----------------------------------------------------------------------------------------------

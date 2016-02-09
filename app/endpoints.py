@@ -1,13 +1,13 @@
 import time
 import requests
-from flask import request
+from flask import request, redirect, url_for
 
 from app.io import IO
 from app.cron import Cron
 from app.temperature import read_temp
 from lib.config import config
 from lib.helpers import get_statuses, get_times
-from lib.db import TempCommands, session
+from lib.db import TempCommands, session, ConfigTemperatura
 
 #-------------------------------------------------------------------------------------------------
 def home():
@@ -61,6 +61,7 @@ def doser(pin_id, quantity):
 
 #--------------------------------------------------------------------------------------------------
 def reload_pins():
+    Procedure.run()
     statuses = get_statuses()
     obj = TempCommands.get()
     if obj is not None:
@@ -71,23 +72,24 @@ def reload_pins():
 
 
 #-------------------------------------------------------------------------------------------------
-def set_procedure(procedure):
-    #statuses = get_statuses(procedure)
-    statuses = {}
-    if procedure == "lights_on":
-        statuses = {"865": True, "830": True}
-    elif procedure == "lights_off":
-        statuses = {"865": False, "830": False, "led": False}
-    elif procedure == "movie":
-        statuses = {"865": False, "830": False, "led": True}
-    elif procedure == "schimb_apa":
-        statuses = {"865": True, "830": False, "led": True, "pompa": False, "incalzitor": False}
-    elif procedure == "reset":
-        TempCommands.clear_all()
-        statuses = get_statuses()
+def edit_pins():
+    if request.method == "GET":
+        values = ConfigTemperatura.get_all()
+        return """
+            <h1 style='color:blue'>Hello There!</h1>
+            <form action="/edit_pins" method="post">
+                Temperatura Ziua: <input type="text" name="t_am" value="{}"><br>
+                Temperatura Noaptea: <input type="text" name="t_pm" value="{}"><br>
+                <input type="submit" value="Salveaza">
+            </form>
+        """.format(values.get("t_am", ""), values.get("t_pm", ""))
+    else:
+        params = request.values.to_dict()
+        ConfigTemperatura.save(params)
+
+        return redirect(url_for('edit_pins'))
 
 
-    obj = TempCommands.add_entry(statuses)
-    IO.set_pins(statuses)
 
-    return procedure
+
+
