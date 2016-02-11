@@ -1,12 +1,12 @@
 import time
 import requests
+from datetime import datetime
 from flask import request, redirect, url_for
 
 from app.io import IO
-from app.cron import Cron
 from app.temperature import read_temp
 from lib.config import config
-from lib.helpers import get_statuses, get_times
+from lib.helpers import Process
 from lib.db import TempCommands, session, ConfigTemperatura
 
 #-------------------------------------------------------------------------------------------------
@@ -20,6 +20,12 @@ def open_pin(pin_id):
     obj = TempCommands.add_entry({pin_id: True})
     IO.open(pin_id)
     return "<h1 style='color:blue'>Hello There, {}</h1>".format(pin_id)
+
+
+#-------------------------------------------------------------------------------------------------
+def force_close():
+    Process.force_close()
+    return "Inchis fortat"
 
 
 #-------------------------------------------------------------------------------------------------
@@ -37,14 +43,7 @@ def set_times_to_cron():
 
 #-------------------------------------------------------------------------------------------------
 def temperature():
-    if request.method == "GET":
-        return str(read_temp())
-    else:
-        temp = read_temp()
-        data = {"temperature": temp}
-        response = requests.post("http://aquanet.ro/temperature", data=data )
-
-        return response.content
+    return str(read_temp())
 
 
 #-------------------------------------------------------------------------------------------------
@@ -61,28 +60,59 @@ def doser(pin_id, quantity):
 
 #--------------------------------------------------------------------------------------------------
 def reload_pins():
-    Procedure.run()
-    statuses = get_statuses()
-    obj = TempCommands.get()
-    if obj is not None:
-        statuses.update(obj.statuses)
-    IO.set_pins(statuses)
+    am = ConfigTemperatura.get("am")
+    pm = ConfigTemperatura.get("pm")
+    date = datetime.now()
+    este_zi = date.replace(hour=am.ora) < date < date.replace(hour=pm.ora)
+    if este_zi:
+        temp = am.temperature
+    else:
+        temp = pm.temperature
 
-    return str(statuses)
+    senzor_temp = read_temp()
 
+    if senzor_temp < temp - 0.2:
+        Process.start()
+    elif senzor_temp > temp - 0.2:
+        Process.stop()
+    else:
+        Process.run()
+
+    return "pins reloaded"
 
 #-------------------------------------------------------------------------------------------------
 def edit_pins():
     if request.method == "GET":
         values = ConfigTemperatura.get_all()
         return """
-            <h1 style='color:blue'>Hello There!</h1>
+            <h1 style='color:blue'>Hello Simon!</h1>
             <form action="/edit_pins" method="post">
-                Temperatura Ziua: <input type="text" name="t_am" value="{}"><br>
-                Temperatura Noaptea: <input type="text" name="t_pm" value="{}"><br>
+                <table>
+                <tr>
+                    <td>Temperatura Ziua: </td>
+                    <td><input type="number" name="t_am" value="{}"></td>
+                </tr>
+                <tr>
+                    <td>Ziua incepe la:</td>
+                    <td><input type="number" name="h_am" value="{}"></td>
+                </tr>
+                <tr>
+                </tr>
+                <tr>
+                    <td>Temperatura Noaptea:</td>
+                    <td><input type="number" name="t_pm" value="{}"></td>
+                </tr>
+                <tr>
+                    <td>Noaptea incepe la:</td>
+                    <td><input type="number" name="h_pm" value="{}"></td>
+                </tr>
+                </table>
                 <input type="submit" value="Salveaza">
             </form>
-        """.format(values.get("t_am", ""), values.get("t_pm", ""))
+        """.format(values.get("am", {}).get("temp", ""),
+                   values.get("am", {}).get("ora", ""),
+                   values.get("pm", {}).get("temp", ""),
+                   values.get("pm", {}).get("ora", ""))
     else:
         params = request.values.to_dict()
         ConfigTemperatura.save(params)

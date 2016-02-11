@@ -6,6 +6,7 @@ ROUTES = (
     (["GET"], "/temperatura", temperature),
     (["GET"], "/pin/<pin_id>/open", open_pin),
     (["GET"], "/pin/<pin_id>/close", close_pin),
+    (["GET"], "/force_close", force_close),
     (["GET", "POST"], "/edit_pins", edit_pins),
 
     (["GET"], "/get_temperatures", get_temperatures),

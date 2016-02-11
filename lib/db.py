@@ -17,7 +17,8 @@ class ConfigTemperatura(Base):
     __tablename__ = "config_temperature"
 
     id = Column(String(10), primary_key=True)
-    temperatura = Column(Float, nullable=False)
+    temperature = Column(Float, nullable=False)
+    ora = Column(Integer, nullable=False)
 
     @classmethod
     #----------------------------------------------------------------------------------------------
@@ -32,26 +33,31 @@ class ConfigTemperatura(Base):
     #----------------------------------------------------------------------------------------------
     def get_all(cls):
         query = session.query(cls)
-        query = query.filter(ConfigTemperatura.id.in_(config["config_values"]))
+        query = query.filter(ConfigTemperatura.id.in_(["am", "pm"]))
         values = query.all()
 
-        return {item.id: item.temperatura for item in values}
+        return {item.id: {"temp": item.temperature, "ora": item.ora} for item in values}
 
 
     @classmethod
     #----------------------------------------------------------------------------------------------
     def save(cls, values):
-        for id in config["config_values"]:
-            if not values.get(id):
-                raise ValueError("Idiot, pune la amandoua")
+        obj = cls.get("am")
+        if not obj:
+            obj = cls()
+            obj.id = "am"
+        obj.temperature = values["t_am"]
+        obj.ora = values["h_am"]
+        session.add(obj)
 
-        for id, temp in values.iteritems():
-            obj = cls.get(id)
-            if not obj:
-                obj = cls()
-            obj.id = id
-            obj.temperatura = temp
-            session.add(obj)
+        obj = cls.get("pm")
+        if not obj:
+            obj = cls()
+            obj.id = "pm"
+        obj.temperature = values["t_pm"]
+        obj.ora = values["h_pm"]
+        session.add(obj)
+
         session.commit()
 
 

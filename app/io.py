@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import time
+import logging
 from RPi import GPIO
 from lib.config import config
 
@@ -38,6 +39,8 @@ class IO_BASE(object):
 
     #----------------------------------------------------------------------------------------------
     def change_pin_status(self, pin_id, required_status):
+        status = "PORNESTE" if required_status==self.OPEN_PIN else "OPRESTE"
+        logging.warning("{} {}".format(status, pin_id))
         pin = self.PINS.get(pin_id)
         if pin is None:
             return
