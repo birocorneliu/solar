@@ -43,7 +43,10 @@ def set_times_to_cron():
 
 #-------------------------------------------------------------------------------------------------
 def temperature():
-    return str(read_temp())
+    try:
+        return str(read_temp())
+    except:
+        return "Senzorul de temperatura nu e conectat cum trebuie!"
 
 
 #-------------------------------------------------------------------------------------------------
